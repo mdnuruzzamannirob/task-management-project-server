@@ -4,7 +4,8 @@ const cors = require('cors');
 require('dotenv').config()
 const {
     MongoClient,
-    ServerApiVersion
+    ServerApiVersion,
+    ObjectId
 } = require('mongodb');
 
 const port = process.env.PORT || 1001;
@@ -32,18 +33,46 @@ async function run() {
     try {
         const taskCollection = client.db('taskManagementDB').collection('task')
 
+        app.get('/api/v1/get-task', async (req, res) => {
+            const email = req.query.email
+            const query = {
+                email: email
+            }
+            const result = await taskCollection.find(query).toArray()
+            res.send(result)
+        })
+
         app.post('/api/v1/create-task', async (req, res) => {
             const newTask = req.body;
             const result = await taskCollection.insertOne(newTask)
             res.send(result)
         })
 
+        app.patch('/api/v1/update-task/:id', async (req, res) => {
+            const id = req.params.id;
+            const task = req.body;
+            const query = {
+                _id: new ObjectId(id)
+            }
+            const update = {
+                $set: {
+                    status: task.taskToMap
+                }
+            };
+            const result = await taskCollection.updateOne(query, update)
+            res.send(result)
+        })
 
+        app.delete('/api/v1/delete-task/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const query = {
+                _id: new ObjectId(id)
+            }
+            const result = await taskCollection.deleteOne(query)
+            res.send(result)
+        })
 
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({
-            ping: 1
-        });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
 
